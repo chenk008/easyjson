@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"unicode/utf8"
 
-	"github.com/mailru/easyjson/buffer"
+	"github.com/chenk008/easyjson/buffer"
 )
 
 type tokenWriter struct {

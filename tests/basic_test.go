@@ -8,8 +8,8 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/mailru/easyjson"
-	"github.com/mailru/easyjson/jwriter"
+	"github.com/chenk008/easyjson"
+	"github.com/chenk008/easyjson/jwriter"
 )
 
 type testType interface {
