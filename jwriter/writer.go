@@ -21,6 +21,8 @@ const (
 type Writer interface {
 	Flags() Flags
 
+	Flush() error
+
 	// ReadCloser returns an io.ReadCloser that can be used to read the data.
 	// ReadCloser also resets the buffer.
 	ReadCloser() (io.ReadCloser, error)
@@ -112,6 +114,10 @@ func (w *BufWriter) SetFlags(f Flags) {
 // Size returns the size of the data that was written out.
 func (w *BufWriter) Flags() Flags {
 	return w.flags
+}
+
+func (w *BufWriter) Flush() error {
+	return nil
 }
 
 // Size returns the size of the data that was written out.

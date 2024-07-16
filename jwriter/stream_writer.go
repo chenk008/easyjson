@@ -14,8 +14,6 @@ import (
 	"github.com/mailru/easyjson/buffer"
 )
 
-var nullToken = []byte("null")
-
 type tokenWriter struct {
 	flags            Flags
 	buffer           buffer.Buffer
@@ -24,14 +22,14 @@ type tokenWriter struct {
 	NoEscapeHTML     bool
 }
 
-func newStreamingTokenWriter(dest io.Writer, bufferSize int) tokenWriter {
+func NewStreamingTokenWriter(dest io.Writer, bufferSize int) Writer {
 	tw := tokenWriter{
 		targetIOWriter:   dest,
 		targetBufferSize: bufferSize,
 	}
 
 	tw.buffer.EnsureSpace(bufferSize)
-	return tw
+	return &tw
 }
 
 func (w *tokenWriter) Flags() Flags {

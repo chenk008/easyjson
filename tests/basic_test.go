@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"net/http/httptest"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/mailru/easyjson"
@@ -13,6 +14,7 @@ import (
 
 type testType interface {
 	json.Marshaler
+	easyjson.Marshaler
 	json.Unmarshaler
 }
 
@@ -69,6 +71,17 @@ func TestMarshal(t *testing.T) {
 		}
 
 		got := string(data)
+		if got != test.Encoded {
+			t.Errorf("[%d, %T] MarshalJSON(): got \n%v\n\t\t want \n%v", i, test.Decoded, got, test.Encoded)
+		}
+
+		buf := new(strings.Builder)
+		w := jwriter.NewStreamingTokenWriter(buf, 1024)
+		err = test.Decoded.MarshalEasyJSON(w)
+		if err != nil {
+			t.Errorf("[%d, %T] MarshalJSON() error: %v", i, test.Decoded, err)
+		}
+		got = buf.String()
 		if got != test.Encoded {
 			t.Errorf("[%d, %T] MarshalJSON(): got \n%v\n\t\t want \n%v", i, test.Decoded, got, test.Encoded)
 		}

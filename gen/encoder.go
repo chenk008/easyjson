@@ -494,7 +494,9 @@ func (g *Generator) genStructMarshaler(t reflect.Type) error {
 
 	fmt.Fprintln(g.out, "// MarshalEasyJSON supports easyjson.Marshaler interface")
 	fmt.Fprintln(g.out, "func (v "+typ+") MarshalEasyJSON(w jwriter.Writer) error {")
-	fmt.Fprintln(g.out, "  return "+fname+"(w, v)")
+	fmt.Fprintln(g.out, "  if err := "+fname+"(w, v); err != nil {return err}")
+	fmt.Fprintln(g.out, "  return w.Flush()")
+
 	fmt.Fprintln(g.out, "}")
 
 	return nil
