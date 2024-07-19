@@ -10,7 +10,8 @@ import (
 
 // PoolConfig contains configuration for the allocation and reuse strategy.
 type PoolConfig struct {
-	StartSize  int // Minimum chunk size that is allocated.
+	StartSize int // Initialize size
+
 	PooledSize int // Minimum chunk size that is reused, reusing chunks too small will result in overhead.
 	MaxSize    int // Maximum chunk size that will be allocated.
 }
@@ -24,6 +25,7 @@ var config = PoolConfig{
 // Reuse pool: chunk size -> pool.
 var buffers = map[int]*sync.Pool{}
 
+// 512--1024--2048 ~ 32768
 func initBuffers() {
 	for l := config.PooledSize; l <= config.MaxSize; l *= 2 {
 		buffers[l] = new(sync.Pool)
@@ -46,6 +48,7 @@ func putBuf(buf []byte) {
 	if size < config.PooledSize {
 		return
 	}
+	// get sized pool
 	if c := buffers[size]; c != nil {
 		c.Put(buf[:0])
 	}
@@ -70,8 +73,11 @@ type Buffer struct {
 	// Buf is the current chunk that can be used for serialization.
 	Buf []byte
 
-	toPool []byte
-	bufs   [][]byte
+	// the data
+	latestBufSize int
+
+	// Data to be dumped
+	bufs [][]byte
 }
 
 // EnsureSpace makes sure that the current chunk contains at least s free bytes,
@@ -85,24 +91,25 @@ func (b *Buffer) EnsureSpace(s int) {
 func (b *Buffer) ensureSpaceSlow(s int) {
 	l := len(b.Buf)
 	if l > 0 {
-		if cap(b.toPool) != cap(b.Buf) {
-			// Chunk was reallocated, toPool can be pooled.
-			putBuf(b.toPool)
-		}
+		// 初始bufs
 		if cap(b.bufs) == 0 {
 			b.bufs = make([][]byte, 0, 8)
 		}
+		// 放到bufs
 		b.bufs = append(b.bufs, b.Buf)
-		l = cap(b.toPool) * 2
+		// 计算新 buf size
+		l = b.latestBufSize * 2
 	} else {
+		// 原始Buf是空的，从StartSize 开始
 		l = config.StartSize
 	}
 
 	if l > config.MaxSize {
 		l = config.MaxSize
 	}
+	// get free buf
 	b.Buf = getBuf(l)
-	b.toPool = b.Buf
+	b.latestBufSize = cap(b.Buf)
 }
 
 // AppendByte appends a single byte to buffer.
@@ -174,14 +181,13 @@ func (b *Buffer) DumpTo(w io.Writer) (written int, err error) {
 	}
 	n, err := bufs.WriteTo(w)
 
+	// free bufs
 	for _, buf := range b.bufs {
 		putBuf(buf)
 	}
-	putBuf(b.toPool)
 
 	b.bufs = nil
 	b.Buf = nil
-	b.toPool = nil
 
 	return int(n), err
 }
@@ -192,7 +198,6 @@ func (b *Buffer) DumpTo(w io.Writer) (written int, err error) {
 func (b *Buffer) BuildBytes(reuse ...[]byte) []byte {
 	if len(b.bufs) == 0 {
 		ret := b.Buf
-		b.toPool = nil
 		b.Buf = nil
 		return ret
 	}
@@ -212,13 +217,25 @@ func (b *Buffer) BuildBytes(reuse ...[]byte) []byte {
 	}
 
 	ret = append(ret, b.Buf...)
-	putBuf(b.toPool)
 
 	b.bufs = nil
-	b.toPool = nil
 	b.Buf = nil
 
 	return ret
+}
+
+func (b *Buffer) Close() error {
+	// Release all remaining buffers.
+	for _, buf := range b.bufs {
+		putBuf(buf)
+	}
+	// In case Close gets called multiple times.
+	b.bufs = nil
+
+	putBuf(b.Buf)
+	b.Buf = nil
+
+	return nil
 }
 
 type readCloser struct {
@@ -271,7 +288,6 @@ func (b *Buffer) ReadCloser() io.ReadCloser {
 	ret := &readCloser{0, append(b.bufs, b.Buf)}
 
 	b.bufs = nil
-	b.toPool = nil
 	b.Buf = nil
 
 	return ret

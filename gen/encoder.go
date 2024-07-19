@@ -344,12 +344,9 @@ func (g *Generator) genStructFieldEncoder(t reflect.Type, f reflect.StructField,
 	jsonName := g.fieldNamer.GetJSONFieldName(t, f)
 	tags := parseFieldTags(f)
 
-	fmt.Fprintf(g.out, "    //"+strconv.Quote(jsonName)+"\n")
-
 	if tags.omit {
 		return firstCondition, nil
 	}
-	fmt.Fprintf(g.out, "    //1"+strconv.Quote(jsonName)+"\n")
 
 	toggleFirstCondition := firstCondition
 
@@ -361,8 +358,6 @@ func (g *Generator) genStructFieldEncoder(t reflect.Type, f reflect.StructField,
 		fmt.Fprintln(g.out, "  if", g.notEmptyCheck(f.Type, "in."+f.Name), "{")
 		// can be any in runtime, so toggleFirstCondition stay as is
 	}
-
-	fmt.Fprintf(g.out, "    //2"+strconv.Quote(jsonName)+"\n")
 
 	if firstCondition {
 		fmt.Fprintf(g.out, "    const prefix string = %q\n", ","+strconv.Quote(jsonName)+":")

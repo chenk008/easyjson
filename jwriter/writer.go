@@ -23,9 +23,8 @@ type Writer interface {
 
 	Flush() error
 
-	// ReadCloser returns an io.ReadCloser that can be used to read the data.
-	// ReadCloser also resets the buffer.
-	ReadCloser() (io.ReadCloser, error)
+	// Close resets the buffer.
+	Close() error
 
 	// RawByte appends raw binary data to the buffer.
 	RawByte(c byte) error
@@ -136,10 +135,8 @@ func (w *BufWriter) BuildBytes(reuse ...[]byte) ([]byte, error) {
 	return w.Buffer.BuildBytes(reuse...), nil
 }
 
-// ReadCloser returns an io.ReadCloser that can be used to read the data.
-// ReadCloser also resets the buffer.
-func (w *BufWriter) ReadCloser() (io.ReadCloser, error) {
-	return w.Buffer.ReadCloser(), nil
+func (w *BufWriter) Close() error {
+	return w.Buffer.Close()
 }
 
 // RawByte appends raw binary data to the buffer.

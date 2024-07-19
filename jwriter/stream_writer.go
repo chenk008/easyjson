@@ -51,12 +51,8 @@ func (tw *tokenWriter) maybeFlush() error {
 	return tw.Flush()
 }
 
-// -------
-
-// ReadCloser returns an io.ReadCloser that can be used to read the data.
-// ReadCloser also resets the buffer.
-func (w *tokenWriter) ReadCloser() (io.ReadCloser, error) {
-	return w.buffer.ReadCloser(), nil
+func (w *tokenWriter) Close() error {
+	return w.buffer.Close()
 }
 
 // RawByte appends raw binary data to the buffer.
