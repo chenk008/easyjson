@@ -28,7 +28,12 @@ var buffers = map[int]*sync.Pool{}
 // 512--1024--2048 ~ 32768
 func initBuffers() {
 	for l := config.PooledSize; l <= config.MaxSize; l *= 2 {
-		buffers[l] = new(sync.Pool)
+		p := sync.Pool{
+			New: func() any {
+				return make([]byte, 0, l)
+			},
+		}
+		buffers[l] = &p
 	}
 }
 
