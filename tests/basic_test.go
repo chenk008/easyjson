@@ -77,10 +77,12 @@ func TestMarshal(t *testing.T) {
 
 		buf := new(strings.Builder)
 		w := jwriter.NewStreamingTokenWriter(buf, 1024)
+		defer w.Close()
 		err = test.Decoded.MarshalEasyJSON(w)
 		if err != nil {
 			t.Errorf("[%d, %T] MarshalJSON() error: %v", i, test.Decoded, err)
 		}
+		w.Flush()
 		got = buf.String()
 		if got != test.Encoded {
 			t.Errorf("[%d, %T] MarshalJSON(): got \n%v\n\t\t want \n%v", i, test.Decoded, got, test.Encoded)
