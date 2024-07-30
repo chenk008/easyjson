@@ -18,6 +18,8 @@ const (
 type Writer interface {
 	Flags() Flags
 
+	MaybeFlush() (int, error)
+
 	Flush() (int, error)
 
 	// Close resets the buffer.

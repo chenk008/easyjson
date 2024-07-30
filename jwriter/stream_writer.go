@@ -42,12 +42,11 @@ func (tw *tokenWriter) Flush() (int, error) {
 	return tw.buffer.DumpTo(tw.targetIOWriter)
 }
 
-func (tw *tokenWriter) maybeFlush() error {
+func (tw *tokenWriter) MaybeFlush() (int, error) {
 	if tw.targetIOWriter == nil || tw.buffer.Size() < tw.targetBufferSize {
-		return nil
+		return 0, nil
 	}
-	_, err := tw.Flush()
-	return err
+	return tw.Flush()
 }
 
 func (w *tokenWriter) Close() error {
@@ -328,5 +327,5 @@ func (w *tokenWriter) String(s string) error {
 	}
 	w.buffer.AppendString(s[p:])
 	w.buffer.AppendByte('"')
-	return w.maybeFlush()
+	return nil
 }
