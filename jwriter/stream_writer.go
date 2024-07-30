@@ -27,7 +27,7 @@ func NewStreamingTokenWriter(dest io.Writer, bufferSize int) Writer {
 		targetBufferSize: bufferSize,
 	}
 
-	tw.buffer.EnsureSpace(bufferSize)
+	tw.buffer.EnsureSpace(1)
 	return &tw
 }
 
