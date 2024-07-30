@@ -61,14 +61,16 @@ func BenchmarkEJ_Marshal_L_ToWriter(b *testing.B) {
 	var l int64
 	out := &DummyWriter{}
 	for i := 0; i < b.N; i++ {
-		w := jwriter.BufWriter{}
-		err := xlStructData.MarshalEasyJSON(&w)
+		w := jwriter.NewStreamingTokenWriter(out, 1024)
+		err := xlStructData.MarshalEasyJSON(w)
 		if err != nil {
 			b.Error(err)
 		}
-
-		l = int64(w.Size())
-		w.DumpTo(out)
+		if written, err := w.Flush(); err != nil {
+			b.Error(err)
+		} else {
+			l = int64(written)
+		}
 	}
 	b.SetBytes(l)
 
@@ -90,14 +92,17 @@ func BenchmarkEJ_Marshal_M_ToWriter(b *testing.B) {
 	var l int64
 	out := &DummyWriter{}
 	for i := 0; i < b.N; i++ {
-		w := jwriter.BufWriter{}
-		err := largeStructData.MarshalEasyJSON(&w)
+		w := jwriter.NewStreamingTokenWriter(out, 1024)
+		err := largeStructData.MarshalEasyJSON(w)
 		if err != nil {
 			b.Error(err)
 		}
+		if written, err := w.Flush(); err != nil {
+			b.Error(err)
+		} else {
+			l = int64(written)
+		}
 
-		l = int64(w.Size())
-		w.DumpTo(out)
 	}
 	b.SetBytes(l)
 
@@ -108,14 +113,17 @@ func BenchmarkEJ_Marshal_M_ToWriter_Parallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var l int64
 		for pb.Next() {
-			w := jwriter.BufWriter{}
-			err := largeStructData.MarshalEasyJSON(&w)
+			w := jwriter.NewStreamingTokenWriter(out, 1024)
+			err := largeStructData.MarshalEasyJSON(w)
 			if err != nil {
 				b.Error(err)
 			}
 
-			l = int64(w.Size())
-			w.DumpTo(out)
+			if written, err := w.Flush(); err != nil {
+				b.Error(err)
+			} else {
+				l = int64(written)
+			}
 		}
 		if l > 0 {
 			b.SetBytes(l)
@@ -143,14 +151,17 @@ func BenchmarkEJ_Marshal_L_ToWriter_Parallel(b *testing.B) {
 	b.RunParallel(func(pb *testing.PB) {
 		var l int64
 		for pb.Next() {
-			w := jwriter.BufWriter{}
+			w := jwriter.NewStreamingTokenWriter(out, 1024)
 
-			err := xlStructData.MarshalEasyJSON(&w)
+			err := xlStructData.MarshalEasyJSON(w)
 			if err != nil {
 				b.Error(err)
 			}
-			l = int64(w.Size())
-			w.DumpTo(out)
+			if written, err := w.Flush(); err != nil {
+				b.Error(err)
+			} else {
+				l = int64(written)
+			}
 		}
 		if l > 0 {
 			b.SetBytes(l)

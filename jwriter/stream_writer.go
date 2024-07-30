@@ -8,7 +8,6 @@ package jwriter
 
 import (
 	"io"
-	"strconv"
 	"unicode/utf8"
 
 	"github.com/chenk008/easyjson/buffer"
@@ -36,19 +35,19 @@ func (w *tokenWriter) Flags() Flags {
 	return w.flags
 }
 
-func (tw *tokenWriter) Flush() error {
+func (tw *tokenWriter) Flush() (int, error) {
 	if tw.targetIOWriter == nil {
-		return nil
+		return 0, nil
 	}
-	_, err := tw.buffer.DumpTo(tw.targetIOWriter)
-	return err
+	return tw.buffer.DumpTo(tw.targetIOWriter)
 }
 
 func (tw *tokenWriter) maybeFlush() error {
 	if tw.targetIOWriter == nil || tw.buffer.Size() < tw.targetBufferSize {
 		return nil
 	}
-	return tw.Flush()
+	_, err := tw.Flush()
+	return err
 }
 
 func (w *tokenWriter) Close() error {
@@ -58,13 +57,13 @@ func (w *tokenWriter) Close() error {
 // RawByte appends raw binary data to the buffer.
 func (w *tokenWriter) RawByte(c byte) error {
 	w.buffer.AppendByte(c)
-	return w.maybeFlush()
+	return nil
 }
 
 // RawByte appends raw binary data to the buffer.
 func (w *tokenWriter) RawBytes(data []byte) error {
 	w.buffer.AppendBytes(data)
-	return w.maybeFlush()
+	return nil
 }
 
 func (w *tokenWriter) RawTextWithErr(data []byte, err error) error {
@@ -84,205 +83,180 @@ func (w *tokenWriter) RawBytesWithErr(data []byte, err error) error {
 // RawByte appends raw binary data to the buffer.
 func (w *tokenWriter) RawString(s string) error {
 	w.buffer.AppendString(s)
-	return w.maybeFlush()
+	return nil
 }
 
 // Base64Bytes appends data to the buffer after base64 encoding it
 func (w *tokenWriter) Base64Bytes(data []byte) error {
 	if data == nil {
 		w.buffer.AppendString("null")
-		return w.maybeFlush()
+		return nil
 	}
 	w.buffer.AppendByte('"')
 	base64(&w.buffer, data)
 	w.buffer.AppendByte('"')
-	return w.maybeFlush()
+	return nil
 }
 
 func (w *tokenWriter) Uint8(n uint8) error {
-	w.buffer.EnsureSpace(3)
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendUint(uint64(n), 3)
+	return nil
 }
 
 func (w *tokenWriter) Uint16(n uint16) error {
-	w.buffer.EnsureSpace(5)
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendUint(uint64(n), 5)
+	return nil
 }
 
 func (w *tokenWriter) Uint32(n uint32) error {
-	w.buffer.EnsureSpace(10)
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendUint(uint64(n), 10)
+	return nil
 }
 
 func (w *tokenWriter) Uint(n uint) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendUint(uint64(n), 20)
+	return nil
 }
 
 func (w *tokenWriter) Uint64(n uint64) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, n, 10)
-	return w.maybeFlush()
+	w.buffer.AppendUint(uint64(n), 20)
+	return nil
 }
 
 func (w *tokenWriter) Int8(n int8) error {
-	w.buffer.EnsureSpace(4)
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendInt(int64(n), 4)
+	return nil
 }
 
 func (w *tokenWriter) Int16(n int16) error {
-	w.buffer.EnsureSpace(6)
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendInt(int64(n), 6)
+	return nil
 }
 
 func (w *tokenWriter) Int32(n int32) error {
-	w.buffer.EnsureSpace(11)
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendInt(int64(n), 11)
+	return nil
 }
 
 func (w *tokenWriter) Int(n int) error {
-	w.buffer.EnsureSpace(21)
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	return w.maybeFlush()
+	w.buffer.AppendInt(int64(n), 21)
+	return nil
 }
 
 func (w *tokenWriter) Int64(n int64) error {
-	w.buffer.EnsureSpace(21)
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, n, 10)
-	return w.maybeFlush()
+	w.buffer.AppendInt(n, 21)
+	return nil
 }
 
 func (w *tokenWriter) Uint8Str(n uint8) error {
-	w.buffer.EnsureSpace(3)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendUint(uint64(n), 3)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Uint16Str(n uint16) error {
-	w.buffer.EnsureSpace(5)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendUint(uint64(n), 5)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Uint32Str(n uint32) error {
-	w.buffer.EnsureSpace(10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendUint(uint64(n), 10)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) UintStr(n uint) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendUint(uint64(n), 20)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Uint64Str(n uint64) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, n, 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendUint(uint64(n), 20)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) UintptrStr(n uintptr) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendUint(w.buffer.Buf, uint64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendUint(uint64(n), 20)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Int8Str(n int8) error {
-	w.buffer.EnsureSpace(4)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendInt(int64(n), 2)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Int16Str(n int16) error {
-	w.buffer.EnsureSpace(6)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendInt(int64(n), 6)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Int32Str(n int32) error {
-	w.buffer.EnsureSpace(11)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendInt(int64(n), 11)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) IntStr(n int) error {
-	w.buffer.EnsureSpace(21)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, int64(n), 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendInt(int64(n), 21)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Int64Str(n int64) error {
-	w.buffer.EnsureSpace(21)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendInt(w.buffer.Buf, n, 10)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendInt(n, 21)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Float32(n float32) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = strconv.AppendFloat(w.buffer.Buf, float64(n), 'g', -1, 32)
-	return w.maybeFlush()
+	w.buffer.AppendFloat32(n, 20)
+	return nil
 }
 
 func (w *tokenWriter) Float32Str(n float32) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendFloat(w.buffer.Buf, float64(n), 'g', -1, 32)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendFloat32(n, 20)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Float64(n float64) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = strconv.AppendFloat(w.buffer.Buf, n, 'g', -1, 64)
-	return w.maybeFlush()
+	w.buffer.AppendFloat64(n, 20)
+	return nil
 }
 
 func (w *tokenWriter) Float64Str(n float64) error {
-	w.buffer.EnsureSpace(20)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	w.buffer.Buf = strconv.AppendFloat(w.buffer.Buf, float64(n), 'g', -1, 64)
-	w.buffer.Buf = append(w.buffer.Buf, '"')
-	return w.maybeFlush()
+	w.buffer.AppendByte('"')
+	w.buffer.AppendFloat64(n, 20)
+	w.buffer.AppendByte('"')
+	return nil
 }
 
 func (w *tokenWriter) Bool(v bool) error {
 	w.buffer.EnsureSpace(5)
 	if v {
-		w.buffer.Buf = append(w.buffer.Buf, "true"...)
+		w.buffer.AppendString("true")
 	} else {
-		w.buffer.Buf = append(w.buffer.Buf, "false"...)
+		w.buffer.AppendString("false")
 	}
-	return w.maybeFlush()
+	return nil
 }
 
 func (w *tokenWriter) String(s string) error {

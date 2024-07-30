@@ -54,9 +54,14 @@ func Marshal(v Marshaler) ([]byte, error) {
 		return nullBytes, nil
 	}
 
-	w := jwriter.BufWriter{}
-	v.MarshalEasyJSON(&w)
-	return w.BuildBytes()
+	bufferWriter := jwriter.NewBufferWriter()
+	if err := v.MarshalEasyJSON(bufferWriter); err != nil {
+		return nil, err
+	}
+	if _, err := bufferWriter.Flush(); err != nil {
+		return nil, err
+	}
+	return bufferWriter.BuildBytes(), nil
 }
 
 // MarshalToWriter marshals the data to an io.Writer.
@@ -65,9 +70,14 @@ func MarshalToWriter(v Marshaler, w io.Writer) (written int, err error) {
 		return w.Write(nullBytes)
 	}
 
-	jw := jwriter.BufWriter{}
-	v.MarshalEasyJSON(&jw)
-	return jw.DumpTo(w)
+	bufferWriter := jwriter.NewBufferWriter()
+	if err := v.MarshalEasyJSON(bufferWriter); err != nil {
+		return 0, err
+	}
+	if _, err := bufferWriter.Flush(); err != nil {
+		return 0, err
+	}
+	return w.Write(bufferWriter.BuildBytes())
 }
 
 // MarshalToHTTPResponseWriter sets Content-Length and Content-Type headers for the
@@ -82,15 +92,18 @@ func MarshalToHTTPResponseWriter(v Marshaler, w http.ResponseWriter) (started bo
 		return true, written, err
 	}
 
-	jw := jwriter.BufWriter{}
-	if err := v.MarshalEasyJSON(&jw); err != nil {
+	bufferWriter := jwriter.NewBufferWriter()
+	if err := v.MarshalEasyJSON(bufferWriter); err != nil {
+		return false, 0, err
+	}
+	if _, err := bufferWriter.Flush(); err != nil {
 		return false, 0, err
 	}
 	w.Header().Set("Content-Type", "application/json")
-	w.Header().Set("Content-Length", strconv.Itoa(jw.Size()))
+	w.Header().Set("Content-Length", strconv.Itoa(bufferWriter.Size()))
 
 	started = true
-	written, err = jw.DumpTo(w)
+	written, err = w.Write(bufferWriter.BuildBytes())
 	return
 }
 
